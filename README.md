@@ -16,3 +16,12 @@ Designed with a minimalist "flat" structure, the system leverages a high-perform
    ```bash
    git clone https://github.com/aleksbuss/Termux-Text-Vault.git
    cd Termux-Text-Vault
+
+   
+1. Execute the initialization script: chmod +x install.sh start.sh
+./install.sh
+
+2. CRITICAL: Update your cryptographic credentials in the .env file to prevent unauthorized access.
+nano .env
+
+3. Ignite the server daemon: ./start.sh
