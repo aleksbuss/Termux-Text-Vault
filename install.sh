@@ -4,12 +4,45 @@
 GREEN='\033[0;32m'
 BLUE='\033[0;34m'
 RED='\033[0;31m'
+YELLOW='\033[1;33m'
 NC='\033[0m'
 
 echo -e "${BLUE}[+] Initializing Termux Text Vault dependencies...${NC}"
 pkg update -y
 pkg install python cloudflared sqlite git -y
-pip install -r requirements.txt
+
+# --- PYDANTIC-CORE FIX FOR ANDROID/TERMUX ---
+# pydantic-core is a Rust extension — PyPI has no pre-built wheels for Android.
+# Strategy: use community-maintained pre-compiled wheels first, Rust compile as fallback.
+
+# Export Android API level (required by maturin/Rust if compiling from source)
+export ANDROID_API_LEVEL=$(getprop ro.build.version.sdk 2>/dev/null || echo 24)
+
+echo -e "${BLUE}[+] Installing Python dependencies...${NC}"
+echo -e "${BLUE}    (Using pre-built Android wheels for pydantic-core)${NC}"
+
+pip install -r requirements.txt \
+    --extra-index-url https://eutalix.github.io/android-pydantic-core/ 2>&1
+
+# Check if pip install succeeded
+if [ $? -ne 0 ]; then
+    echo -e "${YELLOW}[!] Pre-built wheels failed. Attempting Rust compilation (may take 10-20 min)...${NC}"
+    pkg install rust binutils -y
+    pip install -r requirements.txt
+    if [ $? -ne 0 ]; then
+        echo -e "${RED}[✖] Installation failed. Check errors above.${NC}"
+        exit 1
+    fi
+fi
+
+# Quick sanity check — can Python actually import everything?
+python -c "from fastapi import FastAPI; import aiosqlite; print('All imports OK')" 2>&1
+if [ $? -ne 0 ]; then
+    echo -e "${RED}[✖] Python import check failed. Dependencies are broken.${NC}"
+    exit 1
+fi
+
+echo -e "${GREEN}[✔] All dependencies installed successfully!${NC}"
 
 # --- INTERACTIVE SECURITY SETUP ---
 if [ ! -f .env ]; then
@@ -34,12 +67,14 @@ if [ ! -f .env ]; then
         fi
     done
 
-    # Write credentials to local-only .env (never pushed to GitHub via .gitignore)
+    # Write credentials to local-only .env (protected by .gitignore)
     echo "API_USERNAME=$set_user" > .env
     echo "API_PASSWORD=$set_pass" >> .env
-    echo -e "\n${GREEN}[✔] Credentials saved securely to local .env file.${NC}"
+    echo -e "\n${GREEN}[✔] Credentials saved to local .env file.${NC}"
 else
     echo -e "${GREEN}[i] Existing .env detected — skipping credential setup.${NC}"
 fi
 
-echo -e "\n${BLUE}[✔] Deployment complete! Run: ./start.sh${NC}"
+echo -e "\n${GREEN}==================================================${NC}"
+echo -e "${GREEN}[✔] Installation complete! Run: ./start.sh${NC}"
+echo -e "${GREEN}==================================================${NC}"
