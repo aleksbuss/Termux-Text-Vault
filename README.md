@@ -15,8 +15,8 @@ Ever needed to transfer a long script, config file, or 10MB of text to a remote 
 └─────────────┘         └──────────────────┘         └─────────────┘
                                ▲
 ┌─────────────┐                │
-│  VPS in     │                │
-│  Amsterdam  │◄───────────────┘
+│  VPS        │                │
+│             │◄───────────────┘
 │  (terminal) │
 └─────────────┘
 ```
