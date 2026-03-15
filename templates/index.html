@@ -8,52 +8,75 @@
     <script>
         tailwind.config = { darkMode: 'class' }
     </script>
+    <style>
+        /* Ensure textarea fills available space */
+        #editor { min-height: 60vh; }
+        @media (max-width: 640px) {
+            #editor { min-height: 45vh; }
+        }
+        /* Smooth archive slide */
+        .archive-enter { animation: slideIn 0.2s ease-out; }
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+    </style>
 </head>
 <body class="bg-gray-900 text-gray-100 min-h-screen flex flex-col font-sans">
-    
-    <!-- Navigation & Control Panel -->
-    <header class="bg-gray-800 border-b border-gray-700 p-4 sticky top-0 z-10">
-        <div class="max-w-5xl mx-auto flex flex-wrap items-center justify-between gap-4">
-            <h1 class="text-xl font-bold text-white flex items-center gap-2">
-                📦 Edge Vault
-            </h1>
-            <div class="flex gap-2">
-                <button onclick="pullText()" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg font-medium transition flex items-center gap-1 shadow-lg">
-                    ⬇️ Pull
+
+    <!-- Header -->
+    <header class="bg-gray-800 border-b border-gray-700 px-4 py-3 sticky top-0 z-10">
+        <div class="max-w-5xl mx-auto flex items-center justify-between gap-3">
+            <h1 class="text-lg font-bold text-white whitespace-nowrap">📦 Edge Vault</h1>
+            <div class="flex flex-wrap gap-2 justify-end">
+                <button onclick="pullText()" id="btnPull"
+                    class="bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white px-3 py-1.5 rounded-lg text-sm font-medium transition shadow">
+                    ⬇ Pull
                 </button>
-                <button onclick="pushText()" class="bg-green-600 hover:bg-green-500 text-white px-4 py-2 rounded-lg font-medium transition flex items-center gap-1 shadow-lg">
-                    ⬆️ Push
+                <button onclick="pushText()" id="btnPush"
+                    class="bg-green-600 hover:bg-green-500 active:bg-green-700 text-white px-3 py-1.5 rounded-lg text-sm font-medium transition shadow">
+                    ⬆ Push
                 </button>
-                <button onclick="copyText()" class="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-lg font-medium transition flex items-center gap-1 border border-gray-600">
+                <button onclick="copyText()"
+                    class="bg-gray-700 hover:bg-gray-600 active:bg-gray-800 text-white px-3 py-1.5 rounded-lg text-sm font-medium transition border border-gray-600">
                     📋 Copy
                 </button>
-                <button onclick="toggleArchive()" class="bg-purple-600 hover:bg-purple-500 text-white px-4 py-2 rounded-lg font-medium transition flex items-center gap-1 shadow-lg ml-4">
+                <label class="bg-amber-600 hover:bg-amber-500 active:bg-amber-700 text-white px-3 py-1.5 rounded-lg text-sm font-medium transition shadow cursor-pointer">
+                    📁 File
+                    <input type="file" accept=".txt,.md,.csv,.json,.xml,.html,.log" class="hidden" onchange="uploadFile(event)">
+                </label>
+                <button onclick="toggleArchive()"
+                    class="bg-purple-600 hover:bg-purple-500 active:bg-purple-700 text-white px-3 py-1.5 rounded-lg text-sm font-medium transition shadow">
                     📚 Archive
                 </button>
             </div>
         </div>
     </header>
 
-    <!-- Main Workspace -->
-    <main class="flex-grow flex max-w-5xl w-full mx-auto p-4 gap-4 relative">
-        
-        <!-- Text Editor Interface -->
-        <div class="flex-grow flex flex-col w-full transition-all duration-300">
-            <div id="statusAlert" class="hidden mb-2 p-2 rounded text-sm font-medium text-center transition"></div>
-            <textarea id="editor" 
-                class="flex-grow w-full bg-gray-800 border border-gray-700 rounded-xl p-4 text-gray-100 font-mono text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 resize-none shadow-inner"
-                placeholder="Enter your payload here. Click Push to transmit the data to the edge server..."></textarea>
+    <!-- Main -->
+    <main class="flex-grow flex max-w-5xl w-full mx-auto p-3 gap-3 relative">
+
+        <!-- Editor -->
+        <div class="flex-grow flex flex-col w-full">
+            <div id="statusAlert" class="hidden mb-2 px-3 py-2 rounded text-sm font-medium text-center"></div>
+            <textarea id="editor"
+                class="flex-grow w-full bg-gray-800 border border-gray-700 rounded-xl p-4 text-gray-100 font-mono text-sm leading-relaxed focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 resize-none"
+                placeholder="Paste or type text here. Push to save, Pull to retrieve last entry. Ctrl+Enter = Push"></textarea>
+            <div class="flex justify-between items-center mt-1 px-1 text-xs text-gray-500">
+                <span id="charCount">0 chars</span>
+                <span id="sizeCount">0 B</span>
+            </div>
         </div>
 
-        <!-- Archive Sidebar (Hidden by default) -->
-        <aside id="archivePanel" class="hidden w-80 bg-gray-800 border border-gray-700 rounded-xl flex flex-col shadow-xl absolute right-4 top-4 bottom-4 z-20 md:relative md:top-0 md:right-0 md:bottom-0">
-            <div class="p-4 border-b border-gray-700 flex justify-between items-center">
-                <h2 class="font-bold text-lg">Vault Archive</h2>
-                <button onclick="toggleArchive()" class="text-gray-400 hover:text-white transition">❌</button>
+        <!-- Archive Panel -->
+        <aside id="archivePanel" class="hidden archive-enter w-80 shrink-0 bg-gray-800 border border-gray-700 rounded-xl flex flex-col shadow-2xl
+            fixed right-3 top-16 bottom-3 z-20
+            sm:relative sm:right-0 sm:top-0 sm:bottom-0">
+            <div class="p-3 border-b border-gray-700 flex justify-between items-center">
+                <h2 class="font-bold">Vault Archive</h2>
+                <button onclick="toggleArchive()" class="text-gray-400 hover:text-white text-lg leading-none">&times;</button>
             </div>
-            <ul id="archiveList" class="overflow-y-auto flex-grow p-2 space-y-2">
-                <!-- Data populated dynamically via JavaScript -->
-            </ul>
+            <ul id="archiveList" class="overflow-y-auto flex-grow p-2 space-y-2"></ul>
         </aside>
     </main>
 
@@ -61,20 +84,42 @@
         const editor = document.getElementById('editor');
         const alertBox = document.getElementById('statusAlert');
         const archivePanel = document.getElementById('archivePanel');
+        const charCount = document.getElementById('charCount');
+        const sizeCount = document.getElementById('sizeCount');
 
-        // UI Alert handler
+        // --- Character counter ---
+        function updateCounter() {
+            const len = editor.value.length;
+            charCount.textContent = len.toLocaleString() + ' chars';
+            const bytes = new Blob([editor.value]).size;
+            if (bytes < 1024) sizeCount.textContent = bytes + ' B';
+            else if (bytes < 1048576) sizeCount.textContent = (bytes / 1024).toFixed(1) + ' KB';
+            else sizeCount.textContent = (bytes / 1048576).toFixed(2) + ' MB';
+        }
+        editor.addEventListener('input', updateCounter);
+
+        // --- Ctrl+Enter shortcut ---
+        editor.addEventListener('keydown', (e) => {
+            if (e.ctrlKey && e.key === 'Enter') { e.preventDefault(); pushText(); }
+        });
+
+        // --- Alert handler ---
+        let alertTimer;
         function showAlert(msg, isError = false) {
+            clearTimeout(alertTimer);
             alertBox.textContent = msg;
-            alertBox.className = `mb-2 p-2 rounded text-sm font-medium text-center transition ${isError ? 'bg-red-900/50 text-red-400' : 'bg-green-900/50 text-green-400'}`;
+            alertBox.className = `mb-2 px-3 py-2 rounded text-sm font-medium text-center ${isError ? 'bg-red-900/60 text-red-300' : 'bg-green-900/60 text-green-300'}`;
             alertBox.style.display = 'block';
-            setTimeout(() => alertBox.style.display = 'none', 3000);
+            alertTimer = setTimeout(() => { alertBox.style.display = 'none'; }, 4000);
         }
 
-        // PUSH: Transmit payload and flush editor
+        // --- PUSH ---
         async function pushText() {
             const content = editor.value.trim();
-            if (!content) return showAlert("Payload is empty!", true);
+            if (!content) return showAlert('Nothing to push — editor is empty.', true);
 
+            const btn = document.getElementById('btnPush');
+            btn.disabled = true; btn.textContent = '⏳ Saving...';
             try {
                 const res = await fetch('/api/push', {
                     method: 'POST',
@@ -82,82 +127,151 @@
                     body: JSON.stringify({ content })
                 });
                 if (res.ok) {
-                    editor.value = ''; // Flush the editor upon successful transmission
-                    showAlert("✅ Payload successfully transmitted to the edge node (Push)!");
+                    editor.value = '';
+                    updateCounter();
+                    showAlert('✅ Pushed successfully!');
                     if (!archivePanel.classList.contains('hidden')) loadArchive();
-                } else throw new Error();
+                } else {
+                    const err = await res.json().catch(() => null);
+                    throw new Error(err?.detail || res.statusText);
+                }
             } catch (e) {
-                showAlert("❌ Network transmission failed.", true);
+                showAlert('❌ Push failed: ' + e.message, true);
+            } finally {
+                btn.disabled = false; btn.textContent = '⬆ Push';
             }
         }
 
-        // PULL: Fetch the most recent payload
+        // --- PULL ---
         async function pullText() {
+            const btn = document.getElementById('btnPull');
+            btn.disabled = true; btn.textContent = '⏳ Loading...';
             try {
                 const res = await fetch('/api/pull');
-                if (res.status === 404) return showAlert("Server vault is empty.", true);
+                if (res.status === 404) return showAlert('Vault is empty — nothing to pull.', true);
+                if (!res.ok) throw new Error(res.statusText);
                 const data = await res.json();
                 editor.value = data.content;
-                showAlert("⬇️ Latest payload retrieved successfully (Pull)");
+                updateCounter();
+                showAlert('⬇ Latest entry loaded.');
             } catch (e) {
-                showAlert("❌ Connection error established.", true);
+                showAlert('❌ Pull failed: ' + e.message, true);
+            } finally {
+                btn.disabled = false; btn.textContent = '⬇ Pull';
             }
         }
 
-        // COPY: Transfer editor content to system clipboard
+        // --- COPY ---
         function copyText() {
-            if (!editor.value) return showAlert("No content available to copy.", true);
-            navigator.clipboard.writeText(editor.value).then(() => {
-                showAlert("📋 Content copied to system clipboard!");
-            }).catch(() => {
-                showAlert("❌ Clipboard execution failed.", true);
-            });
+            if (!editor.value) return showAlert('Nothing to copy.', true);
+            navigator.clipboard.writeText(editor.value)
+                .then(() => showAlert('📋 Copied to clipboard!'))
+                .catch(() => {
+                    // Fallback for older browsers / insecure contexts
+                    editor.select();
+                    document.execCommand('copy');
+                    showAlert('📋 Copied (fallback).');
+                });
         }
 
-        // ARCHIVE: Toggle visibility and fetch historical index
-        async function toggleArchive() {
+        // --- FILE UPLOAD ---
+        function uploadFile(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                editor.value = e.target.result;
+                updateCounter();
+                showAlert(`📁 Loaded: ${file.name} (${(file.size / 1024).toFixed(1)} KB)`);
+            };
+            reader.onerror = () => showAlert('❌ Failed to read file.', true);
+            reader.readAsText(file);
+            event.target.value = ''; // Reset so same file can be re-selected
+        }
+
+        // --- ARCHIVE ---
+        function toggleArchive() {
             archivePanel.classList.toggle('hidden');
-            if (!archivePanel.classList.contains('hidden')) {
-                loadArchive();
-            }
+            if (!archivePanel.classList.contains('hidden')) loadArchive();
+        }
+
+        function formatSize(bytes) {
+            if (bytes < 1024) return bytes + ' B';
+            if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+            return (bytes / 1048576).toFixed(2) + ' MB';
         }
 
         async function loadArchive() {
             const list = document.getElementById('archiveList');
-            list.innerHTML = '<li class="text-center text-gray-500 text-sm py-4">Loading data...</li>';
+            list.innerHTML = '<li class="text-center text-gray-500 text-sm py-4">Loading...</li>';
             try {
                 const res = await fetch('/api/archive');
+                if (!res.ok) throw new Error();
                 const data = await res.json();
                 list.innerHTML = '';
                 if (data.length === 0) {
-                    list.innerHTML = '<li class="text-center text-gray-500 text-sm py-4">Archive is empty.</li>';
+                    list.innerHTML = '<li class="text-center text-gray-500 text-sm py-6">Archive is empty.</li>';
                     return;
                 }
                 data.forEach(item => {
-                    // Formatting to standard en-US format
-                    const date = new Date(item.created_at).toLocaleString('en-US', {hour: '2-digit', minute:'2-digit', day:'2-digit', month:'short'});
-                    list.innerHTML += `
-                        <li class="p-3 bg-gray-700 hover:bg-gray-600 rounded-lg cursor-pointer transition border border-transparent hover:border-blue-500"
-                            onclick="loadFromArchive(${item.id})">
-                            <div class="text-xs text-blue-400 mb-1">${date}</div>
-                            <div class="text-sm text-gray-200 truncate">${item.preview}...</div>
-                        </li>
-                    `;
+                    const li = document.createElement('li');
+                    li.className = 'p-3 bg-gray-700 hover:bg-gray-600 rounded-lg cursor-pointer transition border border-transparent hover:border-blue-500 group relative';
+
+                    const dateDiv = document.createElement('div');
+                    dateDiv.className = 'text-xs text-blue-400 mb-1 flex justify-between';
+                    const dateSpan = document.createElement('span');
+                    dateSpan.textContent = new Date(item.created_at).toLocaleString('en-US', {
+                        month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit'
+                    });
+                    const sizeSpan = document.createElement('span');
+                    sizeSpan.className = 'text-gray-500';
+                    sizeSpan.textContent = formatSize(item.size || 0);
+                    dateDiv.appendChild(dateSpan);
+                    dateDiv.appendChild(sizeSpan);
+
+                    const previewDiv = document.createElement('div');
+                    previewDiv.className = 'text-sm text-gray-200 truncate pr-6';
+                    previewDiv.textContent = item.preview; // Safe: textContent, no XSS
+
+                    const delBtn = document.createElement('button');
+                    delBtn.className = 'absolute top-2 right-2 text-gray-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition text-xs';
+                    delBtn.textContent = '🗑';
+                    delBtn.title = 'Delete';
+                    delBtn.onclick = (e) => { e.stopPropagation(); deleteEntry(item.id); };
+
+                    li.appendChild(dateDiv);
+                    li.appendChild(previewDiv);
+                    li.appendChild(delBtn);
+                    li.onclick = () => loadFromArchive(item.id);
+                    list.appendChild(li);
                 });
             } catch (e) {
-                list.innerHTML = '<li class="text-red-400 text-sm p-2">Data retrieval error.</li>';
+                list.innerHTML = '<li class="text-red-400 text-sm p-3">Failed to load archive.</li>';
             }
         }
 
-        // Fetch a specific payload from the historical index
         async function loadFromArchive(id) {
             try {
                 const res = await fetch(`/api/archive/${id}`);
+                if (!res.ok) throw new Error();
                 const data = await res.json();
                 editor.value = data.content;
-                showAlert("📂 Payload successfully loaded from archive.");
+                updateCounter();
+                showAlert('📂 Loaded from archive.');
             } catch (e) {
-                showAlert("❌ Failed to retrieve the archived payload.", true);
+                showAlert('❌ Failed to load entry.', true);
+            }
+        }
+
+        async function deleteEntry(id) {
+            if (!confirm('Delete this entry permanently?')) return;
+            try {
+                const res = await fetch(`/api/archive/${id}`, { method: 'DELETE' });
+                if (!res.ok) throw new Error();
+                showAlert('🗑 Entry deleted.');
+                loadArchive();
+            } catch (e) {
+                showAlert('❌ Delete failed.', true);
             }
         }
     </script>
