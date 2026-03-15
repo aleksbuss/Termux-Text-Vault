@@ -9,7 +9,7 @@ Designed with a minimalist "flat" structure, the system leverages a high-perform
 * **Asynchronous I/O:** Built on **FastAPI** and **aiosqlite**, ensuring that large I/O operations (writing massive strings to mobile flash memory) do not block the main event loop.
 * **Ephemeral Global Tunneling:** Integrates **Cloudflare Quick Tunnels** (`cloudflared`) to bypass carrier NATs, dynamically exposing the local edge node to the public internet via a secure HTTPS reverse tunnel.
 * **Zero-Trust UI:** The web interface and API are secured via HTTP Basic Authentication, protecting the node from automated scanners and unauthorized data injection.
-* **Zero-Friction Deployment:** A fully automated bash-driven initialization sequence resolves dependencies, provisions credentials interactively, and boots the environment with a single command.
+* **Zero-Friction Deployment:** A fully automated bash-driven initialization sequence resolves dependencies (including pre-compiled Android wheels for Rust-based packages), provisions credentials interactively, and boots the environment with a single command.
 
 ## ⚙️ Deployment Instructions
 
@@ -24,7 +24,10 @@ Designed with a minimalist "flat" structure, the system leverages a high-perform
    chmod +x install.sh start.sh
    ./install.sh
    ```
-   The installer will automatically prompt you to create a **username** and **password**. These credentials are stored locally in `.env` and never pushed to GitHub.
+   The installer will automatically:
+   - Install system packages (`python`, `cloudflared`, `sqlite`, `git`)
+   - Install Python dependencies using pre-compiled Android wheels (no Rust toolchain needed)
+   - Prompt you to create a **username** and **password** (stored locally in `.env`, never pushed to GitHub)
 
 3. Launch the server:
    ```bash
@@ -48,3 +51,11 @@ pkill -f uvicorn && pkill -f cloudflared
 | Validation | Pydantic V2 |
 | Frontend | HTML, TailwindCSS (CDN), Vanilla JS |
 | Tunneling | Cloudflared (Quick Tunnels) |
+
+## ⚠️ Troubleshooting
+
+**`pydantic-core` build fails:** The installer uses [pre-compiled Android wheels](https://github.com/Eutalix/android-pydantic-core). If those are unavailable, it falls back to compiling with Rust (requires `pkg install rust`, takes ~15 min).
+
+**Backend fails to start:** Check `backend.log` for details: `cat backend.log`
+
+**Tunnel URL is empty:** Verify internet connection and check `tunnel.log`: `cat tunnel.log`
