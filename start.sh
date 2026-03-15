@@ -23,23 +23,22 @@ echo "[+] Bootstrapping the async backend server..."
 nohup uvicorn main:app --host 127.0.0.1 --port 8000 > backend.log 2>&1 &
 BACKEND_PID=$!
 
-# Healthcheck using Python (curl may not be installed on Termux)
+# Healthcheck — connect to /api/health and check for 200
+# IMPORTANT: "except Exception" (not bare "except:") so SystemExit(0) propagates correctly
 echo -n "[+] Waiting for backend"
 for i in $(seq 1 20); do
-    # Check if process is still alive
     if ! kill -0 $BACKEND_PID 2>/dev/null; then
         echo -e "\n${RED}[✖] Backend process crashed. Log:${NC}"
         tail -20 backend.log
         exit 1
     fi
-    # Try to connect
     if python -c "
-import urllib.request
+import urllib.request, sys
 try:
-    urllib.request.urlopen('http://127.0.0.1:8000/api/health', timeout=2)
-    exit(0)
-except:
-    exit(1)
+    r = urllib.request.urlopen('http://127.0.0.1:8000/api/health', timeout=2)
+    sys.exit(0 if r.status == 200 else 1)
+except Exception:
+    sys.exit(1)
 " 2>/dev/null; then
         echo -e "\n${GREEN}[✔] Backend is UP! (PID: $BACKEND_PID)${NC}"
         break
@@ -55,7 +54,6 @@ done
 
 echo "[+] Establishing secure Cloudflare tunnel..."
 nohup cloudflared tunnel --url http://127.0.0.1:8000 > tunnel.log 2>&1 &
-TUNNEL_PID=$!
 
 # Wait for tunnel URL to appear
 echo -n "[+] Waiting for tunnel URL"
